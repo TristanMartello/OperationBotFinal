@@ -6,14 +6,14 @@ from BigStepperClass import BigStepper
 from i2cScreenClass import i2cScreen
 import mqtt
 import network, ubinascii
-
+​
 coordinates = [] # coordinates of Operation game piece
 # Declare variables for functions
 x = 0
 y = 0
 d1 = 0 # length of arm 1
 d2 = 0 # length of arm 2
-
+​
 ipaddress = "" # Tufts ip address
 received = False
 found = False
@@ -21,13 +21,13 @@ coordsTop = "coords"
 armsTop = "arms"
 doneTop = "done"
 stateTop = "state"
-
+​
 state = 0
 currentState = 0
 lastState = 0
-
+​
 screen = i2cScreen()
-
+​
 # ————————— Wifi setup —————————
 def connect_wifi():
     station = network.WLAN(network.STA_IF)
@@ -43,10 +43,10 @@ def connect_wifi():
     
 # ------------- STEPPER 1 SETUP (NEMA 17) --------------- #
 # Pin assignments
-
+​
 bigStep = BigStepper(17, 18, 19, 20, 21, 0)  # 5 pins and current angle
 smallStep = lilStepper(10, 11, 12, 13, 0)    # 4 pins and current angle
-
+​
 # ————————— mqtt subscribing —————————  
 def whenCalled(topic, msg):
     global coordinates, received, d1, d2, found, currentState, screen
@@ -77,7 +77,7 @@ def whenCalled(topic, msg):
         
     
 # ------------- INVERSE KINEMATICS CALCULATIONS --------------- #
-
+​
 # Calculates the corresponding angles to an (x,y) point along a circle, with robotic arms
 # of lengths d1 and d2. Assumes arms start at (0,0). Returns angles in degrees.
 def invKinematics(coordinates, d1, d2):
@@ -92,28 +92,29 @@ def invKinematics(coordinates, d1, d2):
     except:
         print("Math domain error")
         time.sleep(.1)
-        return None
+        angles = None
+        pass
         
     theta = math.atan2(y,x) - gamma2 # theta is angle relative to ground
     alpha = math.pi - gamma1 # alpha is angle relative to first arm
     theta = -1*math.degrees(theta)
     alpha = -1*math.degrees(alpha)
     return [theta, alpha]
-
+​
 def moveArm1(angles):
     global currentTheta, bigStep
     desiredTheta = angles[0]
     print("Theta: ", desiredTheta)
     thetaDiff = desiredTheta - bigStep.currentTheta
     bigStep.turnToAngle(thetaDiff, desiredTheta)
-
+​
 def moveArm2(angles):
     global currentAlpha, smallStep
     desiredAlpha = angles[1]
     print("Alpha: ", desiredAlpha)
     alphaDiff = desiredAlpha - smallStep.currAngle
     smallStep.turnToAngle(alphaDiff)
-
+​
 def main():
     # Set up wifi and mqtt
     connect_wifi()
@@ -125,7 +126,7 @@ def main():
     except OSError as e:
         print('Failed')
         return
-
+​
     broker.subscribe(armsTop)
     broker.subscribe(coordsTop) # subscribing to topic to receive coordinates
     broker.subscribe(doneTop)
@@ -146,8 +147,9 @@ def main():
                 moveArm1(angles)
                 moveArm2(angles)
                 coordinates.remove(coordinates[0])
-                broker.check_msg()
-                time.sleep(.01)
+​
+            broker.check_msg()
+            time.sleep(.01)        
         
         if found == True:
             print("Operation successful")
@@ -158,7 +160,7 @@ def main():
     
         broker.check_msg()
         time.sleep(.01)
-
+​
     bigStep.reset_ED_pins()
     print("reset pins")
     screen.mainDisplay(4)
